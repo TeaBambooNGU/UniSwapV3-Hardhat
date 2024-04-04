@@ -1,0 +1,10 @@
+{
+  "networkName": "sepolia",
+  "blockNum": 5628597,
+  "deployCost": "0.011013389603383975",
+  "UniswapV3Factory": "0x33Bdce9C0B2f7e48b86B5956905758e745449F7B",
+  "SwapRouter": "0xf7482989088f709F79956a72Cc487a16AC9d7ADf",
+  "NonfungiblePositionManager": "0xd6B81BcF6f4f3ba0ce6FfDC7a2926f9EbAC1600C",
+  "NonfungibleTokenPositionDescriptor": "0x2A27157Db456855fC6583f39799D79a97Cd8BDe2",
+  "WETH9": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"
+}

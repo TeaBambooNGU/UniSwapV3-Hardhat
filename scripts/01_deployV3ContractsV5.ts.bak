@@ -1,0 +1,165 @@
+import fs from 'fs';
+import hre from 'hardhat';
+import { ethers } from 'hardhat';
+import { env } from 'process';
+require('dotenv').config();
+
+const artifactsJson = {
+    UniswapV3Factory: require('../artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'),
+    SwapRouter: require('../artifacts/contracts/SwapRouter.sol/SwapRouter.json'),
+    NonfungiblePositionManager: require('../artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json'),
+    NonfungibleTokenPositionDescriptor: require('../artifacts/contracts/NonfungibleTokenPositionDescriptor.sol/NonfungibleTokenPositionDescriptor.json'),
+    NFTDescriptor: require('../artifacts/contracts/libraries/NFTDescriptor.sol/NFTDescriptor.json'),
+    WETHContract: require('../WETH9.json')
+}
+// Load assignment owner first to reduce loading times and code redundancy. 
+// This method is not needed if createFactory is created directly with the contract name.
+// const owner = ethers.getSigners()[0];
+
+async function deployUniswapV3Factory() {
+    const [owner] = await ethers.getSigners();
+    console.log("Deploying UniswapV3Factory with the account:", owner.address)
+    // One way to create a contract factory is through abi and bytecode and signer
+    const Factory = new ethers.ContractFactory(artifactsJson.UniswapV3Factory.abi, artifactsJson.UniswapV3Factory.bytecode, owner);
+    const factory = await Factory.deploy();
+    console.log("UniswapV3Factory address:", factory.address);
+    return factory;
+}
+
+async function deploySwapRouter(factoryAddress:string, weth9Address:string) {
+    const [owner] = await ethers.getSigners();
+    console.log("Deploying SwapRouter with the account:", owner.address)
+    const SwapRouter = new ethers.ContractFactory(artifactsJson.SwapRouter.abi, artifactsJson.SwapRouter.bytecode, owner);
+    const swapRouter = await SwapRouter.deploy(factoryAddress, weth9Address);
+    console.log("SwapRouter address:", swapRouter.address);
+    return swapRouter;   
+}
+
+async function deployNFTDescriptor() {
+    // other way to create a contract factory is through contract name in hardhat
+    const NFTDescriptor = new ethers.ContractFactory(artifactsJson.NFTDescriptor.abi, artifactsJson.NFTDescriptor.bytecode);
+    const nftDescriptor = await NFTDescriptor.deploy();
+    console.log("NFTDescriptor address:", nftDescriptor.address);
+    return nftDescriptor;   
+}
+
+async function deployNonfungibleTokenPositionDescriptor(weth9Address:string,tokenLabel:string) {
+    // hardhat does not support libraries in contract deployment, so we need to deploy the contract with the library first
+    const nftDescriptor = await deployNFTDescriptor();
+    // other way to create a contract factory is through contract name and libraries in hardhat
+    const NonfungibleTokenPositionDescriptor = new ethers.ContractFactory("NonfungibleTokenPositionDescriptor", {libraries: {NFTDescriptor: nftDescriptor.address}});
+    const nonfungibleTokenPositionDescriptor = await NonfungibleTokenPositionDescriptor.deploy(weth9Address,ethers.utils.formatBytes32String(tokenLabel));
+    console.log("NonfungTokenPositionDescriptor address:", nonfungibleTokenPositionDescriptor.address);
+    return nonfungibleTokenPositionDescriptor;   
+}
+
+async function deployNonfungiblePositionManager(factoryAddress:string, weth9Address:string, nonfungibleTokenPositionDescriptorAddress:string) {
+    // other way to create a contract factory is through contract name in hardhat
+    const NonfungiblePositionManager = new ethers.ContractFactory("NonfungiblePositionManager");
+    const nonfungiblePositionManager = await NonfungiblePositionManager.deploy(factoryAddress,weth9Address,nonfungibleTokenPositionDescriptorAddress);
+    console.log("NonfungiblePositionManager address:", nonfungiblePositionManager.address);
+    return nonfungiblePositionManager;   
+}
+
+async function deployWETHContract() {
+    const [owner] = await ethers.getSigners();
+    const WETHContract = new ethers.ContractFactory(artifactsJson.WETHContract.abi, artifactsJson.WETHContract.bytecode, owner);
+    const wethContract = await WETHContract.deploy();
+    console.log("WETHContract address:", wethContract.address)
+    return wethContract;
+}
+
+
+async function main() {
+    let startBalance = ethers.getBigInt(0);
+    let wallet = ethers.Wallet.createRandom();
+    let weth9Address = "";
+    let rpcUrl = "";
+    let provider = ethers.getDefaultProvider();
+
+    
+    // Choose the WETH9 address based on the network, if it is a sepolia network, use the address in the environment variable, otherwise deploy the WETH contract
+    if (hre.network.name === "sepolia") {
+        wallet = new ethers.Wallet(env.SEPOLIA_WALLET_PRIVATE_KEY);
+        provider = new ethers.utils.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`);
+        startBalance = await provider.getBalance(env.SEPOLIA_WALLET);
+        if (env.WETH9_ADDRESS === undefined) {
+            throw new Error("WETH9_ADDRESS is not set in the environment variable");
+        }
+        weth9Address = env.WETH9_ADDRESS;
+    } else if (hre.network.name === "anvil") {
+
+        if (env.ANVIL_WALLET_PRIVATE_KEY === undefined) {
+            throw new Error("ANVIL_WALLET_PRIVATE_KEY is not set in the environment variable");
+        }else if (env.ANVIL_WALLET === undefined) {
+            throw new Error("ANVIL_WALLET is not set in the environment variable");
+        }
+
+        wallet = new ethers.Wallet(env.ANVIL_WALLET_PRIVATE_KEY);
+        startBalance = await provider.getBalance(env.ANVIL_WALLET);
+        const wethContract = await deployWETHContract();
+        weth9Address = wethContract.address;
+    } else if (hre.network.name === "hardhat") {
+        wallet = (await ethers.getSigners())[0];
+        const wethContract = await deployWETHContract();
+        weth9Address = wethContract.address;
+    }else{
+        throw new Error("Unsupported network");
+    }
+
+    const factory = await deployUniswapV3Factory();
+    const swapRouter = await deploySwapRouter(factory.address, weth9Address);
+    const nonfungibleTokenPositionDescriptor = await deployNonfungibleTokenPositionDescriptor(weth9Address,"WETH");
+    const nonfungiblePositionManager = await deployNonfungiblePositionManager(factory.address, weth9Address, nonfungibleTokenPositionDescriptor.address);
+
+
+    const deployCost = startBalance.sub((await provider.getBalance(wallet.address)))
+
+    const blockNum = await provider.getBlockNumber();
+
+    const output = {
+        "networkName": hre.network.name,
+        "blockNum": blockNum,
+        "deployCost": ethers.utils.parseEther(deployCost),
+        "UniswapV3Factory": factory.address,
+        "SwapRouter": swapRouter.address,
+        "NonfungiblePositionManager": nonfungiblePositionManager.address,
+        "NonfungibleTokenPositionDescriptor": nonfungibleTokenPositionDescriptor.address,
+        "WETH9": weth9Address
+    }
+
+    const outfile = "./deployInfo.json";
+    const jsonStr = JSON.stringify(output, undefined, 2);
+    fs.writeFileSync(outfile, jsonStr, { encoding: "utf-8" });
+
+    console.log(`
+    ===============================================================
+    Url:            ${hre.network.config.url}
+    Deployer:       ${wallet.address}
+    Depoly Cost:    ${ethers.utils.formatEther(deployCost)}
+    Depoly block number: ${blockNum}
+
+    Contract Addresses:
+    ===============================================================
+    UniswapV3Factory:              ${factory.address ?? "Not Deployed"}
+    ---------------------------------------------------------------
+    SwapRouter:   ${swapRouter.address ?? "Not Deployed"}
+    ---------------------------------------------------------------
+    NonfungiblePositionManager:    ${nonfungiblePositionManager.address ?? "Not Deployed"}
+    ---------------------------------------------------------------
+    NonfungibleTokenPositionDescriptor:    ${nonfungibleTokenPositionDescriptor.address ?? "Not Deployed"}
+    ---------------------------------------------------------------
+    WETH9:       ${weth9Address ?? "Not Deployed"}
+    ---------------------------------------------------------------
+
+    ===============================================================
+`);
+
+}
+// npx hardhat run --network <networkName> scripts/01_deployV3Contracts.ts
+main()
+    .then(() => process.exit(0))
+    .catch(error => {
+        console.error(error);
+        process.exit(1);
+    });

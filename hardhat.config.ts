@@ -1,6 +1,11 @@
+import "@nomicfoundation/hardhat-toolbox"
+require('dotenv').config();
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
-import {env} from "process"
+//import "@nomiclabs/hardhat-etherscan";
+// import "@nomiclabs/hardhat-ethers";
+// import '@nomiclabs/hardhat-waffle';
+import {env} from "process";
+
 
 /**
  * Solidity 编译优化配置
@@ -47,7 +52,7 @@ const DEFAULT_COMPILER_SETTINGS = {
     evmVersion: 'istanbul',
     optimizer: {
       enabled: true,
-      runs: 1_000_000,
+      runs: 200,
     },
     metadata: {
       bytecodeHash: 'none',
@@ -76,11 +81,9 @@ const config: HardhatUserConfig = {
       url : `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
       accounts: [env.SEPOLIA_WALLET_PRIVATE_KEY??""],
     }
-
-
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: env.ETHERSCAN_API_KEY
   },
   solidity: {
     compilers:[DEFAULT_COMPILER_SETTINGS],
