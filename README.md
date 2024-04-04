@@ -1,13 +1,13 @@
-# Sample Hardhat Project
-
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
-
-Try running some of the following tasks:
-
+# UniSwapV3通过Hardhat部署
+该工程整合了 v3-core 和 v3-v3-periphery
+不添加测试模块 因为官方已经测试过了
+## TypeScript环境安装
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
+npm install --save-dev typescript
+npm install --save-dev ts-node
+```
+## UniSwapV3依赖安装
+```shell
+yarn add @uniswap/v3-core
+yarn add @uniswap/v3-periphery
 ```
