@@ -13,6 +13,16 @@ yarn add dotenv
 yarn add @uniswap/v3-core
 yarn add @uniswap/v3-periphery
 ```
+## .env文件需要填写的属性
+```
+ETHERSCAN_API_KEY=xxx
+ALCHEMY_API_KEY=xxx
+SEPOLIA_WALLET_PRIVATE_KEY=xxx
+SEPOLIA_WALLET=xxx
+ANVIL_WALLET_PRIVATE_KEY=xxx
+ANVIL_WALLET=xxx
+WETH9_ADDRESS=xxxx
+```
 ## 部署命令
 ```shell
 # ethersV6版本
