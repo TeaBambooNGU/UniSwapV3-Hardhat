@@ -1,5 +1,5 @@
 import { HardhatUserConfig } from "hardhat/config";
-//import "@nomicfoundation/hardhat-toolbox";
+import "@nomiclabs/hardhat-etherscan";
 
 /**
  * Solidity 编译优化配置

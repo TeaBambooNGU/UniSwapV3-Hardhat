@@ -3,8 +3,9 @@
 不添加测试模块 因为官方已经测试过了
 ## TypeScript环境安装
 ```shell
-npm install --save-dev typescript
-npm install --save-dev ts-node
+yarn add --dev typescript
+yarn add --dev ts-node
+yarn add --dev @nomiclabs/hardhat-etherscan
 ```
 ## UniSwapV3依赖安装
 ```shell
