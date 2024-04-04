@@ -18,3 +18,5 @@ yarn add @uniswap/v3-periphery
 # ethersV6版本
 npx hardhat run --network <networkName> scripts/01_deployV3ContractsV6.ts
 ```
+## TODO
+用脚本实现添加新池子和流动性
