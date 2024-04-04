@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-etherscan";
+import {env} from "process"
 
 /**
  * Solidity 编译优化配置
@@ -68,10 +69,12 @@ const config: HardhatUserConfig = {
     },
     anvil: {
       url : "http://127.0.0.1:8545",
-      chainId: 1337   
+      chainId: 1337,
+      accounts: [env.ANVIL_WALLET_PRIVATE_KEY??""],   
     },
     sepolia: {
-      url : `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      url : `https://eth-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
+      accounts: [env.SEPOLIA_WALLET_PRIVATE_KEY??""],
     }
 
 
