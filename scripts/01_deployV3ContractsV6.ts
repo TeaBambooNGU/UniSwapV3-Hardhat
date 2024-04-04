@@ -201,7 +201,7 @@ async function main() {
     ===============================================================
     networkName:    ${hre.network.name}
     Deployer:       ${wallet.address}
-    Depoly Cost:    ${ethers.formatEther(deployCost)}
+    Depoly Cost:    ${ethers.formatEther(deployCost)}ETH
     Depoly block number: ${blockNum}
 
     Contract Addresses:
